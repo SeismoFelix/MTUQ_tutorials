@@ -1,0 +1,37 @@
+{
+    "event_id": "20241006175624",
+    "model": "FK-ic",
+    "origin": {
+        "time": "2024-10-06T17:56:24.000000Z",
+        "latitude": 64.67,
+        "longitude": -17.46,
+        "depth_in_m": 6000
+    },
+    "source": {
+        "format":"gamma_delta",
+        "mw": 5.1,
+        "gamma": -14.0,
+        "delta": 3.0,
+        "kappa": 93.0,
+        "sigma": 87.0,
+        "h": 0.6427876
+    },
+    "synthetic_duration": 200,
+    "sampling_rate": 20.0,
+    "filter": "raw",
+    "units": "cm",
+    "type": "velocity",
+    "station_array": "circle",
+    "circle_param":{
+        "n_stations": 10,
+        "radius_km": 300,
+        "circle_network":"IC"
+    },
+    "annotations":{
+        "notes":"/Users/felix/Documents/POSTDOC/INVESTIGACION/MTUQ_SOLUTIONS/ICELAND/SOLUTIONS/FK_GF/VATNAJOKULL/20241006175624/FMT/29_ppa/15_33",
+        "suffix_dir":"CLVD_THRUST"
+    },
+    "noise_scaling": 0,
+    "noise_start": "2017-12-01T02:30:44",
+    "noise_duration": 600
+}

@@ -1,0 +1,17 @@
+{
+    "time": "2024-10-06T17:56:24.000000Z",
+    "id":"20241006175624",
+    "latitude": 64.67,
+    "longitude": -17.46,
+    "depth_in_m": 6000,
+    "mw": 5.1,
+    "model": "FK-ic",
+    "format":"gamma_delta",
+    "gamma": -14.0,
+    "delta": 3.0,
+    "kappa": 93.0,
+    "sigma": 87.0,
+    "h": 0.6427876,
+    "wl":120,
+    "fb":"15-33"
+}
