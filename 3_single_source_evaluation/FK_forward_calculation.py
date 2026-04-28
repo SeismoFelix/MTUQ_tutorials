@@ -15,6 +15,7 @@ from mtuq.grid_search import grid_search
 from mtuq.misfit import WaveformMisfit,PolarityMisfit
 from mtuq.process_data import ProcessData
 from mtuq.util import fullpath, merge_dicts, save_json, sort_polarities
+#from mtuq.util import sort_polarities
 from mtuq.util.cap import parse_station_codes, Trapezoid
 from mtuq.util.math import  to_v_w, to_rho, to_mij, from_mij
 import glob
