@@ -157,11 +157,14 @@ if __name__=='__main__':
     if src['format'] == 'vw':
         print('Moment Tensor format: v-w')
 
+        # Define v and w so they are available for lune_dict later
+        v = src['v']
+        w = src['w']
 
         mij = to_mij(
             rho=m0*np.sqrt(2.),  # Tape2012,
-            v=src['v'], 
-            w=src['w'], 
+            v=v, 
+            w=w, 
             kappa=src['kappa'], 
             sigma=src['sigma'], 
             h=src['h']
@@ -261,7 +264,15 @@ if __name__=='__main__':
     path_weights= fullpath('{}/{}/weights.dat'.format(mdir,event))
     event_id=     '{}'.format(event)
     model=  'ak135'
-    db = open_db('{}/{}/{}'.format(mdir,GF,vel_model),format='FK')
+    
+    if GF == 'FK':
+        db = open_db('{}/{}/{}'.format(mdir,GF,vel_model),format='FK')
+    elif GF == 'SPECFEM3D':
+        db = open_db('{}/{}/'.format(vel_model,event_id),format="SPECFEM3D")
+    else:
+        logger.error(f"Green's function format {GF} not recognized.")
+        logger.info(f"Available formats: 'FK', 'SPECFEM3D'.")
+        sys.exit(1)
  
 
     #
@@ -269,37 +280,66 @@ if __name__=='__main__':
     #
     
     #Body waves are only used for using the subroutine of predicting the polarities
-    process_bw = ProcessData(
-        filter_type='Bandpass',
-        freq_min= 1/float(10),
-        freq_max= 1/float(3),
-        pick_type='FK_metadata',
-        FK_database='{}/{}/{}'.format(mdir,GF,vel_model),
-        window_type='body_wave',
-        window_length=15,
-        capuaf_file=path_weights,
-        )
-    
-    process_sw = ProcessData(
-        filter_type='Bandpass',
-        freq_min=1/T_max,
-        freq_max=1/T_min,
-        pick_type='FK_metadata',
-        FK_database='{}/{}/{}'.format(mdir,GF,vel_model),
-        window_type='surface_wave',
-        window_length=wlen,
-        capuaf_file=path_weights,
-        )
+
+    if GF == 'FK':
+
+        process_bw = ProcessData(
+            filter_type='Bandpass',
+            freq_min= 1/float(10),
+            freq_max= 1/float(3),
+            pick_type='FK_metadata',
+            FK_database='{}/{}/{}'.format(mdir,GF,vel_model),
+            window_type='body_wave',
+            window_length=15,
+            capuaf_file=path_weights,
+            )
+        
+        process_sw = ProcessData(
+            filter_type='Bandpass',
+            freq_min=1/T_max,
+            freq_max=1/T_min,
+            pick_type='FK_metadata',
+            FK_database='{}/{}/{}'.format(mdir,GF,vel_model),
+            window_type='surface_wave',
+            window_length=wlen,
+            capuaf_file=path_weights,
+            )
+        
+    elif GF == 'SPECFEM3D':
+
+        process_bw = ProcessData(
+            filter_type='Bandpass',
+            freq_min= 1/float(10),
+            freq_max= 1/float(3),
+            pick_type='taup',
+            taup_model=model,
+            window_type='body_wave',
+            window_length=15,
+            capuaf_file=path_weights,
+            )
+        
+        process_sw = ProcessData(
+            filter_type='Bandpass',
+            freq_min=1/T_max,
+            freq_max=1/T_min,
+            pick_type='taup',
+            taup_model=model,
+            window_type='surface_wave',
+            window_length=wlen,
+            capuaf_file=path_weights,
+            ) 
+
     
     misfit_sw = WaveformMisfit(
         norm='L2',
-        time_shift_min=-5.,
-        time_shift_max=+5.,
+        time_shift_min=-15.,
+        time_shift_max=+15.,
         time_shift_groups=['ZR','T'],
         )
     
     polarity_misfit = PolarityMisfit(
         taup_model=model)
+
 
     #
     # User-supplied weights control how much each station contributes to the
@@ -314,7 +354,7 @@ if __name__=='__main__':
     data = read(path_data, format='sac', 
                 event_id=event_id,
                 station_id_list=station_id_list,
-                tags=['units:m', 'type:velocity'])
+                tags=['units:cm', 'type:velocity'])
     
     data.sort_by_distance()
     stations = data.get_stations()
