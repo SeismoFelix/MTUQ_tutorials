@@ -51,6 +51,9 @@ def read_config_file(json_path):
     with open(json_path, 'r') as f:
         config = json.load(f)
 
+    # Store the path dynamically to avoid hardcoding during the file-copy step later
+    config['_json_path'] = json_path
+
     # -------------------------------------------------------
     # A. PROCESS TIME OBJECTS
     # -------------------------------------------------------
@@ -374,7 +377,9 @@ def save_synthetics(synthetics,config,path_mt='NA',suffix_dir=''):
         line = '{}  {}   1 1 1 1 1      0   0   0   0   0   0\n'.format(name_trace,trace.stats.sac.dist)
         open_weights.write(line)
     open_weights.close()
-    cp_config_file = 'cp config_synthetic.json {}/'.format(dir_name)
+    
+    config_file_source = config.get('_json_path', 'config_synthetic.json')
+    cp_config_file = 'cp {} {}/'.format(config_file_source, dir_name)
     print(cp_config_file)
     os.system(cp_config_file)
     logger.info('Synthetics saved on {}'.format(dir_name))
@@ -545,11 +550,19 @@ if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
-    # Read configuration file
-    config = read_config_file('config_synthetic.json')
+    # Check if a config file argument was passed; otherwise fall back to default
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = 'config_synthetic.json'
+
+    # Read configuration file dynamically
+    config = read_config_file(config_file)
+    
     # Calculate Synthetics
     synthetics = run_synthetic_test(config)
-    #If the moment tensor comes from a MT solution obtained previously in MTUQ
-    path_mt=config['annotations']['notes']
-    suffix_dir=config['annotations']['suffix_dir']
-    save_synthetics(synthetics,config,path_mt,suffix_dir)
+    
+    # If the moment tensor comes from a MT solution obtained previously in MTUQ
+    path_mt = config['annotations']['notes']
+    suffix_dir = config['annotations']['suffix_dir']
+    save_synthetics(synthetics, config, path_mt, suffix_dir)
