@@ -3,7 +3,6 @@
 import os
 import sys
 import json
-import argparse
 import numpy as np
 
 from mtuq import read, open_db
@@ -27,25 +26,6 @@ class Header:
         self.component = component
         self.time_shift = time_shift
         self.cc = cc
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Run MTUQ Grid Search using a parameters_inversion.json file.",
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-    parser.add_argument("-event", type=str, required=True, 
-                        help="Event ID (directory must exist in current path e.g., -event 20220731...)")
-    return parser.parse_args()
-
-def load_params(event_id):
-    """Loads parameters_inversion.json from the event directory."""
-    params_path = os.path.join(os.getcwd(), event_id, 'parameters_inversion.json')
-    if not os.path.exists(params_path):
-        print(f"Error: Configuration file not found at {params_path}")
-        sys.exit(1)
-    
-    with open(params_path, 'r') as f:
-        return json.load(f)
 
 def _getattr(trace, name, *args):
     if len(args) == 1:
@@ -142,28 +122,46 @@ if __name__ == '__main__':
     # Initialize MPI
     comm = MPI.COMM_WORLD
 
-    # Parse Event ID
-    args = parse_args()
-    event_id = args.event
+    # Check if a config file argument was passed; otherwise fall back to default
+    if len(sys.argv) > 1:
+        config_file = sys.argv[1]
+    else:
+        config_file = 'parameters_inversion.json'
+
+    if comm.rank == 0:
+        print(f"Loading configuration from: {config_file}")
+
+    with open(config_file, 'r') as f:
+        params = json.load(f)
+
+    event_id = params['id']
     mdir = os.getcwd()
 
     if comm.rank == 0:
         print(f"Running MTUQ for event: {event_id}")
 
-    # Load parameters from JSON
-    params = load_params(event_id)
-
     # Paths
     path_data = fullpath(f'{mdir}/{event_id}/*.[zrt]')
     path_weights = fullpath(f'{mdir}/{event_id}/weights.dat')
     
-    # Database setup - using IR database
-    #model = 'ir'
-    model = 'iran_ak135'
-    db = open_db(f'{mdir}/FK/ir', format='FK')
+    # Database setup - dynamically pulling from the JSON 'model' key
+    model_option = params.get('model', 'FK-ir').split('-')
+    database_type = model_option[0]
+    vel_model = model_option[1]
+
+    model = vel_model
+    if database_type == 'FK':
+        db = open_db(f'{mdir}/{database_type}/{vel_model}', format='FK')
+        fk_db_path = f'{mdir}/{database_type}/{vel_model}'
+    elif database_type == 'SPECFEM3D':
+        db = open_db(f'{mdir}/{vel_model}/{event_id}', format='SPECFEM3D')
+        fk_db_path = None
+    else:
+        if comm.rank == 0:
+            print(f"Database type {database_type} not recognized.")
+        sys.exit(1)
 
     # Data Processing Settings (Surface Waves Only)
-    # Params now expected to contain explicit period min/max
     period_min = float(params['period_min'])
     period_max = float(params['period_max'])
     window_len = float(params['window_length'])
@@ -172,15 +170,15 @@ if __name__ == '__main__':
         filter_type='Bandpass',
         freq_min=1.0 / period_max,
         freq_max=1.0 / period_min,
-        pick_type='FK_metadata',
-        FK_database=f'{mdir}/FK/ir',
+        pick_type='FK_metadata' if database_type == 'FK' else 'taup',
+        FK_database=fk_db_path if database_type == 'FK' else None,
+        taup_model=params['model_taup'] if database_type == 'SPECFEM3D' else None,
         window_type='surface_wave',
         window_length=window_len,
         capuaf_file=path_weights,
     )
 
     # Misfit Settings
-    # Time shifts are now parameterized
     misfit_sw = Misfit(
         norm='L2',
         time_shift_min=float(params['time_shift_min']),
@@ -208,7 +206,6 @@ if __name__ == '__main__':
 
     depths = []
     for d in prem_depths:
-        # Sanity check for depths (optional, based on your previous code)
         if d < 1000 or d > 19000:
             pass
         else:
@@ -250,7 +247,7 @@ if __name__ == '__main__':
         data = read(path_data, format='sac',
                     event_id=event_id,
                     station_id_list=station_id_list,
-                    tags=['units:m', 'type:velocity'])
+                    tags=[f"units:{params.get('units', 'm')}", f"type:{params.get('type', 'velocity')}"])
 
         data.sort_by_distance()
         stations = data.get_stations()
@@ -314,7 +311,7 @@ if __name__ == '__main__':
                               show_tradeoffs=True, show_magnitudes=True, title=event_id)
 
         plot_beachball(f"{event_id}DEV+Z_beachball.pdf",
-                       best_mt, stations, best_origin,taup_model=model)
+                       best_mt, stations, best_origin,taup_model=params['model_taup'])
 
         print('Saving results...\n')
 
