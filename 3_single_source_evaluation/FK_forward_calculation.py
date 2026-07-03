@@ -139,9 +139,13 @@ def mw2mo(mw):
 
 if __name__=='__main__':
     
-    # Read the moment tensor Json file
-    config = f'input_source.json'
-    #Extract the values v,w,kappa,sigma,h from the input_source.json file
+    # Check if a config file argument was passed; otherwise fall back to default
+    if len(sys.argv) > 1:
+        config = sys.argv[1]
+    else:
+        config = 'input_source.json'
+
+    # Extract the values from the input json file
     with open(config, 'r') as f:
         src= json.load(f)
 
@@ -354,7 +358,7 @@ if __name__=='__main__':
     data = read(path_data, format='sac', 
                 event_id=event_id,
                 station_id_list=station_id_list,
-                tags=['units:cm', 'type:velocity'])
+                tags=[f"units:{src['units']}", f"type:{src['type']}"])
     
     data.sort_by_distance()
     stations = data.get_stations()
@@ -425,8 +429,8 @@ if __name__=='__main__':
     #cp_polarities = print('cp {}/polarities.json {}'.format(event_id,solution_dir))
     #os.system('cp {}/polarities.json {}'.format(event_id,solution_dir))
 
-    cp_json = print('cp input_source.json {}'.format(solution_dir))
-    os.system('cp input_source.json {}'.format(solution_dir))
+    cp_json = print('cp {} {}'.format(config, solution_dir))
+    os.system('cp {} {}'.format(config, solution_dir))
 
     #cp_headerinfo = print('mv {}FMT_header_info.txt {}'.format(event_id,solution_dir))
     #os.system('mv {}FMT_header_info.txt {}'.format(event_id,solution_dir))  
