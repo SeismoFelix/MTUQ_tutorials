@@ -1,0 +1,35 @@
+{
+  "id": "20171201023244",
+  "model": "FK-ir",
+  "model_taup": "iran_ak135",
+  "grid_type": "DC",
+  "use_polarities": false,
+  "latitude": 30.734,
+  "longitude": 57.39,
+  "depth_min": 6.0,
+  "depth_max": 6.0,
+  "depth_step": 1.0,
+  "mw_init": 6.0,
+  "mw_fin": 6.0,
+  "mw_step": 0.1,
+  "origin_time": "2017-12-01T02:32:44.000000Z",
+  "npts_per_axis": 50,
+  "units": "m",
+  "type": "velocity",
+  "surface_waves": {
+    "use": true,
+    "period_min": 15.0,
+    "period_max": 33.0,
+    "window_length": 150.0,
+    "time_shift_min": -10.0,
+    "time_shift_max": 10.0
+  },
+  "body_waves": {
+    "use": false,
+    "period_min": 3.0,
+    "period_max": 15.0,
+    "window_length": 30.0,
+    "time_shift_min": -5.0,
+    "time_shift_max": 5.0
+  }
+}
