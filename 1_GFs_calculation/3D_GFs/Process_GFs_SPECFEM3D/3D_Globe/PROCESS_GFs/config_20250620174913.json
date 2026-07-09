@@ -1,0 +1,6 @@
+{
+    "event_id": "20250620174913",
+    "velocity_model": "MEAD-M20",
+    "processors": "16_PROC",
+    "depths": [7]
+}
